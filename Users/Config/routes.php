@@ -1,5 +1,11 @@
 <?php
 
+CroogoRouter::mapResources('Users.Users', array(
+	'prefix' => '/:api/:prefix/',
+));
+
+Croogo::hookApiComponent('Users', 'Users.UserApi');
+
 // Users
 CroogoRouter::connect('/register', array('plugin' => 'users', 'controller' => 'users', 'action' => 'add'));
 
