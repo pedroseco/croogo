@@ -17,12 +17,12 @@ App::uses('Controller', 'Controller');
 class CroogoAppController extends Controller {
 
 /**
- * Components
+ * Default Components
  *
  * @var array
  * @access public
  */
-	public $components = array(
+	protected $_defaultComponents = array(
 		'Croogo.Croogo',
 		'Security',
 		'Acl',
@@ -30,6 +30,11 @@ class CroogoAppController extends Controller {
 		'Session',
 		'RequestHandler',
 	);
+
+/**
+ * List of registered API Components
+ */
+	protected $apiComponents = array();
 
 /**
  * Helpers
@@ -86,6 +91,10 @@ class CroogoAppController extends Controller {
  */
 	public function __construct($request = null, $response = null) {
 		parent::__construct($request, $response);
+		$request->addDetector('api', array(
+			'param' => 'api',
+			'value' => Configure::read('Croogo.Api.path'),
+		));
 		$this->getEventManager()->dispatch(new CakeEvent('Controller.afterConstruct', $this));
 	}
 
@@ -110,6 +119,7 @@ class CroogoAppController extends Controller {
  */
 	public function afterConstruct() {
 		Croogo::applyHookProperties('Hook.controller_properties', $this);
+		$this->_setupComponents();
 		if (isset($this->request->params['admin'])) {
 			$this->helpers[] = 'Croogo.Croogo';
 			if (empty($this->helpers['Html'])) {
@@ -122,6 +132,31 @@ class CroogoAppController extends Controller {
 				$this->helpers['Paginator'] = array('className' => 'Croogo.CroogoPaginator');
 			}
 		}
+	}
+
+/**
+ * Setup the components array
+ *
+ * @param void
+ * @return void
+ */
+	protected function _setupComponents() {
+		if (!$this->request->is('api')) {
+			$this->components = Hash::merge($this->components, $this->_defaultComponents);
+			return;
+		}
+
+		$this->components = Hash::merge(
+			$this->components,
+			array('Acl', 'Auth', 'Session', 'RequestHandler'),
+			$this->apiComponents
+		);
+		$apiComponents = array();
+		foreach ($this->apiComponents as $component) {
+			list(, $apiComponent) = pluginSplit($component);
+			$apiComponents[] = $apiComponent;
+		}
+		$this->apiComponents = $apiComponents;
 	}
 
 /**
@@ -138,8 +173,11 @@ class CroogoAppController extends Controller {
 		}
 		$this->{$aclFilterComponent}->auth();
 		$this->RequestHandler->setContent('json', array('text/x-json', 'application/json'));
-		$this->Security->blackHoleCallback = 'securityError';
-		$this->Security->requirePost('admin_delete');
+
+		if (!$this->request->is('api')) {
+			$this->Security->blackHoleCallback = 'securityError';
+			$this->Security->requirePost('admin_delete');
+		}
 
 		if (isset($this->request->params['admin'])) {
 			$this->layout = 'admin';
