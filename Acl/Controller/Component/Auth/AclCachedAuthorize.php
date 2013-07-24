@@ -64,6 +64,29 @@ class AclCachedAuthorize extends BaseAuthorize {
 	}
 
 /**
+ * Get the action path for a given request.
+ *
+ * @see BaseAuthorize::action()
+ */
+	public function action(CakeRequest $request, $path = '/:plugin/:controller/:action') {
+		if (empty($request['api'])) {
+			return parent::action($request, $path);
+		}
+
+		$plugin = empty($request['plugin']) ? null : Inflector::camelize($request['plugin']) . '/';
+		$controller = Inflector::camelize($request['controller']);
+		$action = str_replace($request['prefix'] . '_', '', $request['action']);
+
+		$path = str_replace(
+			array(':prefix', ':plugin', ':controller', ':action'),
+			array($request['prefix'], $plugin, $controller, $action),
+			$this->settings['actionPath'] . $path
+		);
+		$path = str_replace('//', '/', $path);
+		return trim($path, '/');
+	}
+
+/**
  * check request request authorization
  *
  */
@@ -72,7 +95,12 @@ class AclCachedAuthorize extends BaseAuthorize {
 		$Acl = $this->_Collection->load('Acl');
 		list($plugin, $userModel) = pluginSplit($this->settings['userModel']);
 		$user = array($userModel => $user);
-		$action = $this->action($request);
+
+		$path = '/:plugin/:controller/:action';
+		if (isset($request->params['api'])) {
+			$path = '/:prefix' . $path;
+		}
+		$action = $this->action($request, $path);
 
 		$cacheName = 'permissions_' . strval($user['User']['id']);
 		if (($permissions = Cache::read($cacheName, 'permissions')) === false) {
