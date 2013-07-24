@@ -69,7 +69,7 @@ class AclCachedAuthorize extends BaseAuthorize {
  * @see BaseAuthorize::action()
  */
 	public function action(CakeRequest $request, $path = '/:plugin/:controller/:action') {
-		if (empty($request['api'])) {
+		if (!$request->is('api')) {
 			return parent::action($request, $path);
 		}
 
@@ -97,7 +97,7 @@ class AclCachedAuthorize extends BaseAuthorize {
 		$user = array($userModel => $user);
 
 		$path = '/:plugin/:controller/:action';
-		if (isset($request->params['api'])) {
+		if ($request->is('api')) {
 			$path = '/:prefix' . $path;
 		}
 		$action = $this->action($request, $path);

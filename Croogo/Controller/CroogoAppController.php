@@ -160,6 +160,26 @@ class CroogoAppController extends Controller {
 	}
 
 /**
+ * Allows extending action from component
+ */
+	public function invokeAction(CakeRequest $request) {
+		try {
+			return parent::invokeAction($request);
+		} catch (MissingActionException $e) {
+			$params = $request->params;
+			$prefix = isset($params['prefix']) ? $params['prefix'] : '';
+			$action = str_replace($prefix . '_', '', $params['action']);
+			foreach ($this->apiComponents as $component) {
+				if ($this->{$component}->isValidAction($action)) {
+					$this->setRequest($request);
+					return $this->{$component}->{$action}($this);
+				}
+			}
+			throw $e;
+		}
+	}
+
+/**
  * beforeFilter
  *
  * @return void

@@ -101,8 +101,7 @@ class AclFilterComponent extends Component {
 			$this->_controller->Auth->authenticate[] = 'Form';
 		}
 
-		$isApi = isset($this->_controller->request->params['api']);
-		$actionPath = $isApi ? 'api' : 'controllers';
+		$actionPath = $this->_controller->request->is('api') ? 'api' : 'controllers';
 		$this->_controller->Auth->authorize = array(
 			AuthComponent::ALL => array(
 				'actionPath' => 'controllers',
@@ -191,8 +190,7 @@ class AclFilterComponent extends Component {
 			$perms = $this->getPermissions('Role', 3);
 			Cache::write($cacheName, $perms, 'permissions');
 		}
-		$isApi = isset($this->_controller->request->params['api']);
-		$actionPath = $isApi ? 'api' : 'controllers';
+		$actionPath = $this->_controller->request->is('api') ? 'api' : 'controllers';
 		if (!empty($perms['allowed'][$actionPath][$this->_controller->name])) {
 			$this->_controller->Auth->allow(
 				$perms['allowed'][$actionPath][$this->_controller->name]
